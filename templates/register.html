@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Register — Smart AI Assistant{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="bi bi-robot"></i>
+            </div>
+            <h1>Create Account</h1>
+            <p class="auth-subtitle">Join Smart AI Assistant today</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.register') }}" class="auth-form" id="register-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-person"></i>
+                    <input type="text" id="username" name="username" class="auth-input"
+                           placeholder="Username" required minlength="3" maxlength="80"
+                           value="{{ request.form.get('username', '') }}">
+                </div>
+            </div>
+
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-envelope"></i>
+                    <input type="email" id="email" name="email" class="auth-input"
+                           placeholder="Email address" required
+                           value="{{ request.form.get('email', '') }}">
+                </div>
+            </div>
+
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-lock"></i>
+                    <input type="password" id="password" name="password" class="auth-input"
+                           placeholder="Password (min 8 characters)" required minlength="8">
+                </div>
+            </div>
+
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-shield-lock"></i>
+                    <input type="password" id="confirm_password" name="confirm_password" class="auth-input"
+                           placeholder="Confirm password" required minlength="8">
+                </div>
+            </div>
+
+            <div class="password-strength" id="password-strength">
+                <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+                <span class="strength-text" id="strength-text"></span>
+            </div>
+
+            <button type="submit" class="auth-btn" id="register-btn">
+                <span>Create Account</span>
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+        </div>
+    </div>
+
+    <!-- Animated background -->
+    <div class="auth-bg">
+        <div class="auth-bg-gradient"></div>
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Password strength indicator
+    const passwordInput = document.getElementById('password');
+    const strengthFill = document.getElementById('strength-fill');
+    const strengthText = document.getElementById('strength-text');
+
+    passwordInput.addEventListener('input', function() {
+        const val = this.value;
+        let score = 0;
+        if (val.length >= 8) score++;
+        if (val.length >= 12) score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        const levels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
+        const colors = ['', '#ef4444', '#f59e0b', '#eab308', '#22c55e', '#10b981'];
+        const widths = ['0%', '20%', '40%', '60%', '80%', '100%'];
+
+        strengthFill.style.width = widths[score];
+        strengthFill.style.background = colors[score];
+        strengthText.textContent = levels[score];
+        strengthText.style.color = colors[score];
+    });
+
+    // Confirm password validation
+    document.getElementById('register-form').addEventListener('submit', function(e) {
+        const pw = document.getElementById('password').value;
+        const cpw = document.getElementById('confirm_password').value;
+        if (pw !== cpw) {
+            e.preventDefault();
+            showToast('Passwords do not match.', 'danger');
+        }
+    });
+</script>
+{% endblock %}

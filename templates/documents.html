@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Documents — Smart AI Assistant{% endblock %}
+
+{% block body %}
+<div class="page-layout">
+    <nav class="page-nav">
+        <a href="{{ url_for('chat.chat_page') }}" class="nav-brand"><i class="bi bi-robot"></i> Smart AI</a>
+        <div class="nav-links">
+            <a href="{{ url_for('chat.chat_page') }}"><i class="bi bi-chat"></i> Chat</a>
+            <a href="{{ url_for('documents.documents_page') }}" class="active"><i class="bi bi-file-text"></i> Docs</a>
+            <a href="{{ url_for('memory.memories_page') }}"><i class="bi bi-lightbulb"></i> Memory</a>
+            <a href="{{ url_for('profile.settings') }}"><i class="bi bi-gear"></i> Settings</a>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="nav-logout"><i class="bi bi-box-arrow-right"></i></a>
+    </nav>
+
+    <div class="page-content">
+        <div class="container py-4" style="max-width: 900px;">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="bi bi-file-earmark-text"></i> Documents</h1>
+                    <p class="text-muted">Upload documents to chat about them using RAG</p>
+                </div>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="dashboard-card mb-4">
+                <h3><i class="bi bi-cloud-upload"></i> Upload Document</h3>
+                <form method="POST" action="{{ url_for('documents.upload_document') }}" enctype="multipart/form-data"
+                      id="upload-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="upload-zone" id="upload-zone">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <p>Drag & drop a file here, or click to browse</p>
+                        <span class="text-muted">Supported: PDF, DOCX, TXT (max 16 MB)</span>
+                        <input type="file" name="file" id="file-input" accept=".pdf,.docx,.txt" required
+                               onchange="handleUploadSelect(this)">
+                    </div>
+                    <div id="selected-file" class="selected-file" style="display:none;">
+                        <i class="bi bi-file-earmark"></i>
+                        <span id="selected-file-name"></span>
+                        <button type="button" class="btn-icon-sm" onclick="clearFileSelection()">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <button type="submit" class="btn btn-primary-gradient mt-3" id="upload-btn" disabled>
+                        <i class="bi bi-upload"></i> Upload & Process
+                    </button>
+                </form>
+            </div>
+
+            <!-- Documents List -->
+            <div class="dashboard-card">
+                <h3><i class="bi bi-collection"></i> Your Documents ({{ documents | length }})</h3>
+                {% if documents %}
+                <div class="table-responsive">
+                    <table class="table table-dark-custom">
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                                <th>Characters</th>
+                                <th>Uploaded</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td>
+                                    <i class="bi {% if doc.file_type == 'pdf' %}bi-file-pdf text-danger{% elif doc.file_type == 'docx' %}bi-file-word text-primary{% else %}bi-file-text text-info{% endif %}"></i>
+                                    {{ doc.filename }}
+                                </td>
+                                <td><span class="badge bg-secondary">.{{ doc.file_type }}</span></td>
+                                <td>{{ doc.size_display }}</td>
+                                <td>{{ '{:,}'.format(doc.char_count) }}</td>
+                                <td>{{ doc.upload_date.strftime('%b %d, %Y') }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('documents.delete_document', doc_id=doc.id) }}"
+                                          onsubmit="return confirm('Delete this document?')" style="display:inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="text-muted mt-2">No documents uploaded yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Drag & drop
+    const zone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+
+    zone.addEventListener('click', () => fileInput.click());
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            handleUploadSelect(fileInput);
+        }
+    });
+
+    function handleUploadSelect(input) {
+        if (input.files.length) {
+            document.getElementById('selected-file').style.display = 'flex';
+            document.getElementById('selected-file-name').textContent = input.files[0].name;
+            document.getElementById('upload-btn').disabled = false;
+        }
+    }
+
+    function clearFileSelection() {
+        document.getElementById('file-input').value = '';
+        document.getElementById('selected-file').style.display = 'none';
+        document.getElementById('upload-btn').disabled = true;
+    }
+</script>
+{% endblock %}

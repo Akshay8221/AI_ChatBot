@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Server Error — Smart AI Assistant{% endblock %}
+
+{% block body %}
+<div class="error-page">
+    <div class="error-content">
+        <div class="error-icon error-icon-danger">
+            <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <h1>500</h1>
+        <p class="error-message">Something went wrong on our end. Please try again later.</p>
+        <a href="{{ url_for('chat.chat_page') }}" class="btn btn-primary-gradient">
+            <i class="bi bi-house"></i> Go to Chat
+        </a>
+    </div>
+</div>
+{% endblock %}

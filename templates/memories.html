@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Memories — Smart AI Assistant{% endblock %}
+
+{% block body %}
+<div class="page-layout">
+    <nav class="page-nav">
+        <a href="{{ url_for('chat.chat_page') }}" class="nav-brand"><i class="bi bi-robot"></i> Smart AI</a>
+        <div class="nav-links">
+            <a href="{{ url_for('chat.chat_page') }}"><i class="bi bi-chat"></i> Chat</a>
+            <a href="{{ url_for('documents.documents_page') }}"><i class="bi bi-file-text"></i> Docs</a>
+            <a href="{{ url_for('memory.memories_page') }}" class="active"><i class="bi bi-lightbulb"></i> Memory</a>
+            <a href="{{ url_for('profile.settings') }}"><i class="bi bi-gear"></i> Settings</a>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="nav-logout"><i class="bi bi-box-arrow-right"></i></a>
+    </nav>
+
+    <div class="page-content">
+        <div class="container py-4" style="max-width: 800px;">
+            <div class="page-header">
+                <h1><i class="bi bi-lightbulb"></i> Memories</h1>
+                <p class="text-muted">Manage what the AI remembers about you</p>
+            </div>
+
+            <!-- Add Memory -->
+            <div class="dashboard-card mb-4">
+                <h3><i class="bi bi-plus-circle"></i> Add Memory</h3>
+                <div class="d-flex gap-2 mb-3">
+                    <select id="memory-category" class="form-select form-control-dark" style="max-width: 160px;">
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat | capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" id="memory-text" class="form-control form-control-dark"
+                           placeholder="e.g., I prefer Python over JavaScript" maxlength="500">
+                    <button class="btn btn-primary-gradient" onclick="addMemory()">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search & Filter -->
+            <div class="dashboard-card mb-4">
+                <div class="d-flex gap-2 flex-wrap">
+                    <div class="flex-grow-1">
+                        <form method="GET" class="d-flex gap-2">
+                            <input type="text" name="q" class="form-control form-control-dark"
+                                   placeholder="Search memories..." value="{{ search_query }}">
+                            <select name="category" class="form-select form-control-dark" style="max-width: 160px;">
+                                <option value="">All categories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}" {% if active_category == cat %}selected{% endif %}>{{ cat | capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-outline-light"><i class="bi bi-search"></i></button>
+                        </form>
+                    </div>
+                    <button class="btn btn-outline-danger" onclick="clearAllMemories()" title="Clear all">
+                        <i class="bi bi-trash"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Memory List -->
+            <div class="dashboard-card" id="memory-list">
+                <h3><i class="bi bi-collection"></i> Your Memories ({{ memories | length }})</h3>
+                {% if memories %}
+                <div class="memory-items">
+                    {% for mem in memories %}
+                    <div class="memory-item" id="memory-{{ mem.id }}">
+                        <div class="memory-content">
+                            <span class="badge bg-{{ 'primary' if mem.category == 'preference' else 'success' if mem.category == 'fact' else 'warning' if mem.category == 'instruction' else 'secondary' }} me-2">
+                                {{ mem.category }}
+                            </span>
+                            <span>{{ mem.memory_text }}</span>
+                        </div>
+                        <div class="memory-meta">
+                            <small class="text-muted">{{ mem.created_at.strftime('%b %d, %Y') }}</small>
+                            <button class="btn-icon-sm text-danger" onclick="deleteMemory({{ mem.id }})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-lightbulb" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="text-muted mt-2">No memories saved yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function addMemory() {
+        const text = document.getElementById('memory-text').value.trim();
+        const category = document.getElementById('memory-category').value;
+        if (!text) return showToast('Please enter a memory.', 'warning');
+
+        fetch('/api/memories/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+            body: JSON.stringify({ text, category })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Memory saved!', 'success');
+                location.reload();
+            } else {
+                showToast(data.error || 'Failed to save.', 'danger');
+            }
+        });
+    }
+
+    function deleteMemory(id) {
+        if (!confirm('Delete this memory?')) return;
+        fetch('/api/memories/delete/' + id, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('memory-' + id).remove();
+                showToast('Memory deleted.', 'info');
+            }
+        });
+    }
+
+    function clearAllMemories() {
+        if (!confirm('Delete ALL memories? This cannot be undone.')) return;
+        fetch('/api/memories/clear', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(`Deleted ${data.deleted} memories.`, 'info');
+                location.reload();
+            }
+        });
+    }
+
+    document.getElementById('memory-text').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); addMemory(); }
+    });
+</script>
+{% endblock %}

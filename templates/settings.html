@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Settings — Smart AI Assistant{% endblock %}
+
+{% block body %}
+<div class="page-layout">
+    <nav class="page-nav">
+        <a href="{{ url_for('chat.chat_page') }}" class="nav-brand"><i class="bi bi-robot"></i> Smart AI</a>
+        <div class="nav-links">
+            <a href="{{ url_for('chat.chat_page') }}"><i class="bi bi-chat"></i> Chat</a>
+            <a href="{{ url_for('documents.documents_page') }}"><i class="bi bi-file-text"></i> Docs</a>
+            <a href="{{ url_for('memory.memories_page') }}"><i class="bi bi-lightbulb"></i> Memory</a>
+            <a href="{{ url_for('profile.settings') }}" class="active"><i class="bi bi-gear"></i> Settings</a>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="nav-logout"><i class="bi bi-box-arrow-right"></i></a>
+    </nav>
+
+    <div class="page-content">
+        <div class="container py-4" style="max-width: 700px;">
+            <div class="page-header">
+                <h1><i class="bi bi-gear"></i> Settings</h1>
+            </div>
+
+            <form method="POST" action="{{ url_for('profile.settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- Appearance -->
+                <div class="dashboard-card mb-4">
+                    <h3><i class="bi bi-palette"></i> Appearance</h3>
+                    <div class="mb-3">
+                        <label class="form-label">Theme</label>
+                        <div class="d-flex gap-3">
+                            <label class="theme-option {% if settings.theme == 'dark' %}active{% endif %}">
+                                <input type="radio" name="theme" value="dark" {% if settings.theme == 'dark' %}checked{% endif %}>
+                                <i class="bi bi-moon-stars"></i> Dark
+                            </label>
+                            <label class="theme-option {% if settings.theme == 'light' %}active{% endif %}">
+                                <input type="radio" name="theme" value="light" {% if settings.theme == 'light' %}checked{% endif %}>
+                                <i class="bi bi-sun"></i> Light
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="compact_mode" id="compact_mode"
+                               {% if settings.compact_mode %}checked{% endif %}>
+                        <label class="form-check-label" for="compact_mode">Compact mode</label>
+                    </div>
+                </div>
+
+                <!-- Chat Settings -->
+                <div class="dashboard-card mb-4">
+                    <h3><i class="bi bi-chat-dots"></i> Chat Settings</h3>
+                    <div class="mb-3">
+                        <label class="form-label">Default AI Model</label>
+                        <select name="default_model" class="form-select form-control-dark">
+                            <option value="gpt-3.5-turbo" {% if settings.default_model == 'gpt-3.5-turbo' %}selected{% endif %}>GPT-3.5 Turbo</option>
+                            <option value="gpt-4" {% if settings.default_model == 'gpt-4' %}selected{% endif %}>GPT-4</option>
+                            <option value="gpt-4-turbo" {% if settings.default_model == 'gpt-4-turbo' %}selected{% endif %}>GPT-4 Turbo</option>
+                            <option value="gpt-4o" {% if settings.default_model == 'gpt-4o' %}selected{% endif %}>GPT-4o</option>
+                        </select>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="send_on_enter" id="send_on_enter"
+                               {% if settings.send_on_enter %}checked{% endif %}>
+                        <label class="form-check-label" for="send_on_enter">Send message on Enter</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="show_timestamps" id="show_timestamps"
+                               {% if settings.show_timestamps %}checked{% endif %}>
+                        <label class="form-check-label" for="show_timestamps">Show message timestamps</label>
+                    </div>
+                </div>
+
+                <!-- Keyboard Shortcuts -->
+                <div class="dashboard-card mb-4">
+                    <h3><i class="bi bi-keyboard"></i> Keyboard Shortcuts</h3>
+                    <div class="shortcuts-list">
+                        <div class="shortcut-item"><kbd>Enter</kbd> <span>Send message</span></div>
+                        <div class="shortcut-item"><kbd>Shift + Enter</kbd> <span>New line</span></div>
+                        <div class="shortcut-item"><kbd>Ctrl + N</kbd> <span>New chat</span></div>
+                        <div class="shortcut-item"><kbd>Ctrl + /</kbd> <span>Toggle sidebar</span></div>
+                        <div class="shortcut-item"><kbd>Escape</kbd> <span>Stop generation</span></div>
+                    </div>
+                </div>
+
+                <!-- Profile Link -->
+                <div class="dashboard-card mb-4">
+                    <h3><i class="bi bi-person"></i> Account</h3>
+                    <a href="{{ url_for('profile.profile') }}" class="btn btn-outline-light">
+                        <i class="bi bi-person-circle"></i> Manage Profile
+                    </a>
+                </div>
+
+                <button type="submit" class="btn btn-primary-gradient btn-lg w-100">
+                    <i class="bi bi-check-lg"></i> Save Settings
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

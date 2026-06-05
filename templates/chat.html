@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}{% if active_chat %}{{ active_chat.title }} — {% endif %}Smart AI Assistant{% endblock %}
+
+{% block body %}
+<div class="chat-layout" id="chat-layout">
+    <!-- ── Sidebar ──────────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="btn-new-chat" id="btn-new-chat" title="New Chat">
+                <i class="bi bi-plus-lg"></i>
+                <span>New Chat</span>
+            </button>
+            <button class="btn-icon sidebar-close-btn d-md-none" id="sidebar-close" title="Close sidebar">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <!-- Search -->
+        <div class="sidebar-search">
+            <div class="search-wrapper">
+                <i class="bi bi-search"></i>
+                <input type="text" id="chat-search" placeholder="Search conversations..." autocomplete="off">
+            </div>
+        </div>
+
+        <!-- Conversation List -->
+        <div class="sidebar-conversations" id="conversation-list">
+            {% if chats %}
+                {% set pinned = chats | selectattr('is_pinned') | list %}
+                {% set unpinned = chats | rejectattr('is_pinned') | list %}
+
+                {% if pinned %}
+                <div class="conv-section">
+                    <div class="conv-section-label"><i class="bi bi-pin-angle-fill"></i> Pinned</div>
+                    {% for chat in pinned %}
+                    <div class="conv-item {% if active_chat and active_chat.id == chat.id %}active{% endif %}"
+                         data-chat-id="{{ chat.id }}" onclick="loadChat({{ chat.id }})">
+                        <div class="conv-item-content">
+                            <i class="bi bi-chat-text"></i>
+                            <span class="conv-title">{{ chat.title }}</span>
+                        </div>
+                        <div class="conv-item-actions">
+                            <button class="btn-icon-sm" onclick="event.stopPropagation(); pinChat({{ chat.id }})" title="Unpin">
+                                <i class="bi bi-pin-fill"></i>
+                            </button>
+                            <button class="btn-icon-sm" onclick="event.stopPropagation(); renameChat({{ chat.id }}, '{{ chat.title | e }}')" title="Rename">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon-sm text-danger" onclick="event.stopPropagation(); deleteChat({{ chat.id }})" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if unpinned %}
+                <div class="conv-section">
+                    <div class="conv-section-label"><i class="bi bi-clock-history"></i> Recent</div>
+                    {% for chat in unpinned %}
+                    <div class="conv-item {% if active_chat and active_chat.id == chat.id %}active{% endif %}"
+                         data-chat-id="{{ chat.id }}" onclick="loadChat({{ chat.id }})">
+                        <div class="conv-item-content">
+                            <i class="bi bi-chat-text"></i>
+                            <span class="conv-title">{{ chat.title }}</span>
+                        </div>
+                        <div class="conv-item-actions">
+                            <button class="btn-icon-sm" onclick="event.stopPropagation(); pinChat({{ chat.id }})" title="Pin">
+                                <i class="bi bi-pin-angle"></i>
+                            </button>
+                            <button class="btn-icon-sm" onclick="event.stopPropagation(); renameChat({{ chat.id }}, '{{ chat.title | e }}')" title="Rename">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon-sm text-danger" onclick="event.stopPropagation(); deleteChat({{ chat.id }})" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="sidebar-empty">
+                    <i class="bi bi-chat-square-dots"></i>
+                    <p>No conversations yet</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+            <a href="{{ url_for('documents.documents_page') }}" class="sidebar-nav-item" title="Documents">
+                <i class="bi bi-file-earmark-text"></i> <span>Documents</span>
+            </a>
+            <a href="{{ url_for('memory.memories_page') }}" class="sidebar-nav-item" title="Memories">
+                <i class="bi bi-lightbulb"></i> <span>Memories</span>
+            </a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}" class="sidebar-nav-item" title="Admin">
+                <i class="bi bi-shield-lock"></i> <span>Admin</span>
+            </a>
+            {% endif %}
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-user">
+                <div class="user-avatar">{{ current_user.username[0] | upper }}</div>
+                <div class="user-info">
+                    <span class="user-name">{{ current_user.username }}</span>
+                    <span class="user-role">{{ current_user.role | capitalize }}</span>
+                </div>
+                <div class="user-actions">
+                    <a href="{{ url_for('profile.settings') }}" class="btn-icon-sm" title="Settings">
+                        <i class="bi bi-gear"></i>
+                    </a>
+                    <button class="btn-icon-sm" id="theme-toggle" title="Toggle theme" onclick="toggleTheme()">
+                        <i class="bi bi-moon-stars"></i>
+                    </button>
+                    <a href="{{ url_for('auth.logout') }}" class="btn-icon-sm" title="Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ── Main Chat Area ───────────────────────────────────── -->
+    <main class="chat-main">
+        <!-- Chat Header -->
+        <header class="chat-header">
+            <button class="btn-icon d-md-none" id="sidebar-toggle" title="Toggle sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="chat-header-title">
+                <h2 id="chat-title">{% if active_chat %}{{ active_chat.title }}{% else %}Smart AI Assistant{% endif %}</h2>
+            </div>
+            <div class="chat-header-actions">
+                <label class="doc-toggle" title="Include document context">
+                    <input type="checkbox" id="use-documents">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span class="d-none d-sm-inline">RAG</span>
+                </label>
+                {% if active_chat %}
+                <button class="btn-icon" onclick="exportChat({{ active_chat.id }})" title="Export chat">
+                    <i class="bi bi-download"></i>
+                </button>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Messages Area -->
+        <div class="chat-messages" id="chat-messages">
+            {% if active_chat and messages %}
+                {% for msg in messages %}
+                <div class="message message-{{ msg.role }}" data-msg-id="{{ msg.id }}">
+                    <div class="message-avatar">
+                        {% if msg.role == 'user' %}
+                            <span>{{ current_user.username[0] | upper }}</span>
+                        {% else %}
+                            <i class="bi bi-robot"></i>
+                        {% endif %}
+                    </div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-author">{% if msg.role == 'user' %}You{% else %}Smart AI{% endif %}</span>
+                            <span class="message-time" title="{{ msg.timestamp }}">{{ msg.timestamp.strftime('%I:%M %p') }}</span>
+                        </div>
+                        <div class="message-body {% if msg.role == 'assistant' %}markdown-body{% endif %}">{{ msg.content }}</div>
+                        {% if msg.role == 'assistant' %}
+                        <div class="message-actions">
+                            <button class="btn-msg-action" onclick="copyMessage(this)" title="Copy">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                            <button class="btn-msg-action" onclick="regenerateResponse()" title="Regenerate">
+                                <i class="bi bi-arrow-clockwise"></i> Regenerate
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% elif not active_chat %}
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcome-screen">
+                    <div class="welcome-logo">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <h1>Smart AI Assistant</h1>
+                    <p class="welcome-subtitle">How can I help you today?</p>
+                    <div class="welcome-suggestions">
+                        <button class="suggestion-card" onclick="useSuggestion('Explain quantum computing in simple terms')">
+                            <i class="bi bi-lightbulb"></i>
+                            <span>Explain quantum computing in simple terms</span>
+                        </button>
+                        <button class="suggestion-card" onclick="useSuggestion('Write a Python function to sort a list')">
+                            <i class="bi bi-code-slash"></i>
+                            <span>Write a Python function to sort a list</span>
+                        </button>
+                        <button class="suggestion-card" onclick="useSuggestion('Help me draft a professional email')">
+                            <i class="bi bi-envelope-paper"></i>
+                            <span>Help me draft a professional email</span>
+                        </button>
+                        <button class="suggestion-card" onclick="useSuggestion('What are the best practices for REST APIs?')">
+                            <i class="bi bi-braces"></i>
+                            <span>Best practices for REST APIs</span>
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Typing Indicator -->
+            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                <div class="message message-assistant">
+                    <div class="message-avatar"><i class="bi bi-robot"></i></div>
+                    <div class="message-content">
+                        <div class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+                <div class="input-container">
+                    <label for="file-upload" class="btn-icon input-action" title="Upload file">
+                        <i class="bi bi-paperclip"></i>
+                        <input type="file" id="file-upload" accept=".pdf,.docx,.txt" style="display:none"
+                               onchange="handleFileUpload(this)">
+                    </label>
+                    <textarea id="message-input" rows="1" placeholder="Message Smart AI Assistant..."
+                              autofocus></textarea>
+                    <button class="btn-send" id="btn-send" title="Send message" onclick="sendMessage()">
+                        <i class="bi bi-arrow-up"></i>
+                    </button>
+                    <button class="btn-stop" id="btn-stop" title="Stop generation" onclick="stopGeneration()"
+                            style="display: none;">
+                        <i class="bi bi-stop-fill"></i>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span class="input-hint">Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Hidden data -->
+<input type="hidden" id="current-chat-id" value="{{ active_chat.id if active_chat else '' }}">
+<input type="hidden" id="csrf-token" value="{{ csrf_token() }}">
+<input type="hidden" id="current-username" value="{{ current_user.username }}">
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

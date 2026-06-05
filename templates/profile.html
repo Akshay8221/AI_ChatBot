@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Profile — Smart AI Assistant{% endblock %}
+
+{% block body %}
+<div class="page-layout">
+    <nav class="page-nav">
+        <a href="{{ url_for('chat.chat_page') }}" class="nav-brand"><i class="bi bi-robot"></i> Smart AI</a>
+        <div class="nav-links">
+            <a href="{{ url_for('chat.chat_page') }}"><i class="bi bi-chat"></i> Chat</a>
+            <a href="{{ url_for('documents.documents_page') }}"><i class="bi bi-file-text"></i> Docs</a>
+            <a href="{{ url_for('profile.settings') }}"><i class="bi bi-gear"></i> Settings</a>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="nav-logout"><i class="bi bi-box-arrow-right"></i></a>
+    </nav>
+
+    <div class="page-content">
+        <div class="container py-4" style="max-width: 700px;">
+            <div class="page-header">
+                <h1><i class="bi bi-person-circle"></i> Profile</h1>
+            </div>
+
+            <!-- Profile Info -->
+            <div class="dashboard-card mb-4">
+                <h3>Account Information</h3>
+                <form method="POST" action="{{ url_for('profile.profile') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control form-control-dark"
+                               value="{{ current_user.username }}" required minlength="3">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control form-control-dark"
+                               value="{{ current_user.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Role</label>
+                        <input type="text" class="form-control form-control-dark" value="{{ current_user.role | capitalize }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Member Since</label>
+                        <input type="text" class="form-control form-control-dark" value="{{ current_user.created_at.strftime('%B %d, %Y') }}" disabled>
+                    </div>
+                    <button type="submit" class="btn btn-primary-gradient">
+                        <i class="bi bi-check-lg"></i> Save Changes
+                    </button>
+                </form>
+            </div>
+
+            <!-- Change Password -->
+            <div class="dashboard-card mb-4">
+                <h3>Change Password</h3>
+                <form method="POST" action="{{ url_for('profile.change_password') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" name="old_password" class="form-control form-control-dark" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" name="new_password" class="form-control form-control-dark" required minlength="8">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control form-control-dark" required minlength="8">
+                    </div>
+                    <button type="submit" class="btn btn-primary-gradient">
+                        <i class="bi bi-key"></i> Update Password
+                    </button>
+                </form>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="dashboard-card danger-zone">
+                <h3 class="text-danger"><i class="bi bi-exclamation-triangle"></i> Danger Zone</h3>
+                <p class="text-muted">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                <form method="POST" action="{{ url_for('profile.delete_account') }}"
+                      onsubmit="return confirm('Are you sure? This will permanently delete your account and all data.')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Enter your password to confirm</label>
+                        <input type="password" name="password" class="form-control form-control-dark" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

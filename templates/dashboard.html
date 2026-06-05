@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Smart AI Assistant{% endblock %}
+
+{% block body %}
+<div class="page-layout">
+    <nav class="page-nav">
+        <a href="{{ url_for('chat.chat_page') }}" class="nav-brand">
+            <i class="bi bi-robot"></i> Smart AI
+        </a>
+        <div class="nav-links">
+            <a href="{{ url_for('chat.chat_page') }}"><i class="bi bi-chat"></i> Chat</a>
+            <a href="{{ url_for('documents.documents_page') }}"><i class="bi bi-file-text"></i> Docs</a>
+            <a href="{{ url_for('memory.memories_page') }}"><i class="bi bi-lightbulb"></i> Memory</a>
+            <a href="{{ url_for('profile.settings') }}"><i class="bi bi-gear"></i> Settings</a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}"><i class="bi bi-shield"></i> Admin</a>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="nav-logout"><i class="bi bi-box-arrow-right"></i></a>
+    </nav>
+
+    <div class="page-content">
+        <div class="container py-4">
+            <div class="page-header">
+                <h1><i class="bi bi-grid"></i> Dashboard</h1>
+                <p class="text-muted">Welcome back, {{ current_user.username }}!</p>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card stat-card-blue">
+                        <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value">{{ current_user.chats.count() }}</span>
+                            <span class="stat-label">Conversations</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card stat-card-green">
+                        <div class="stat-icon"><i class="bi bi-file-earmark-text"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value">{{ current_user.documents.count() }}</span>
+                            <span class="stat-label">Documents</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card stat-card-purple">
+                        <div class="stat-icon"><i class="bi bi-lightbulb"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value">{{ current_user.memories.count() }}</span>
+                            <span class="stat-label">Memories</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3><i class="bi bi-clock-history"></i> Recent Conversations</h3>
+                {% set recent_chats = current_user.chats.order_by(none).all() | sort(attribute='updated_at', reverse=True) %}
+                {% if recent_chats %}
+                <div class="list-group list-group-flush">
+                    {% for chat in recent_chats[:10] %}
+                    <a href="{{ url_for('chat.chat_view', chat_id=chat.id) }}" class="list-group-item-action dashboard-list-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-chat-text me-2"></i>
+                                <strong>{{ chat.title }}</strong>
+                            </div>
+                            <small class="text-muted">{{ chat.updated_at.strftime('%b %d, %Y') }}</small>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No conversations yet. <a href="{{ url_for('chat.chat_page') }}">Start chatting!</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

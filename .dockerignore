@@ -1,0 +1,15 @@
+__pycache__
+*.pyc
+*.pyo
+.env
+.git
+.gitignore
+*.md
+.vscode
+.idea
+instance/
+uploads/
+*.log
+*.db
+.DS_Store
+Thumbs.db
